@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Log Search Interface</title>
+    <style>
+      body {
+        font-family: "Arial", sans-serif;
+        margin: 20px;
+        padding: 20px;
+        background-color: #f4f4f4;
+      }
+
+      h1 {
+        color: #333;
+      }
+
+      label {
+        display: block;
+        margin-top: 10px;
+        font-weight: bold;
+      }
+
+      input {
+        width: 100%;
+        padding: 8px;
+        margin-top: 5px;
+        margin-bottom: 10px;
+        box-sizing: border-box;
+      }
+
+      button {
+        background-color: #4caf50;
+        color: white;
+        padding: 10px;
+        border: none;
+        cursor: pointer;
+      }
+
+      button:hover {
+        background-color: #45a049;
+      }
+
+      ul {
+        list-style-type: none;
+        padding: 0;
+        margin: 0;
+      }
+
+      li {
+        background-color: #fff;
+        padding: 10px;
+        margin-bottom: 10px;
+        border-radius: 5px;
+        box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+      }
+
+      .log-properties {
+        display: flex;
+        flex-direction: column;
+      }
+
+      .log-property {
+        display: flex;
+        margin-bottom: 5px;
+      }
+
+      .property-name {
+        font-weight: bold;
+        margin-right: 5px;
+      }
+
+      .property-value {
+        color: #333;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>Log Search Interface</h1>
+    <label for="level">Level:</label>
+    <input type="text" id="level" name="level" placeholder="Enter Level" />
+
+    <label for="message">Message:</label>
+    <input
+      type="text"
+      id="message"
+      name="message"
+      placeholder="Enter Message"
+    />
+
+    <label for="resourceId">Resource ID:</label>
+    <input
+      type="text"
+      id="resourceId"
+      name="resourceId"
+      placeholder="Enter Resource ID"
+    />
+
+    <label for="timestamp">Timestamp Start:</label>
+    <input
+      type="datetime-local"
+      id="timestamp"
+      name="timestamp"
+      placeholder="Enter Timestamp Start"
+    />
+
+    <label for="timestampEnd">Timestamp End:</label>
+    <input
+      type="datetime-local"
+      id="timestampEnd"
+      name="timestampEnd"
+      placeholder="Enter Timestamp End"
+    />
+
+    <label for="traceId">Trace ID:</label>
+    <input
+      type="text"
+      id="traceId"
+      name="traceId"
+      placeholder="Enter Trace ID"
+    />
+
+    <label for="spanId">Span ID:</label>
+    <input type="text" id="spanId" name="spanId" placeholder="Enter Span ID" />
+
+    <label for="commit">Commit:</label>
+    <input type="text" id="commit" name="commit" placeholder="Enter Commit" />
+
+    <label for="parentResourceId">Parent Resource ID:</label>
+    <input
+      type="text"
+      id="parentResourceId"
+      name="parentResourceId"
+      placeholder="Enter Parent Resource ID"
+    />
+
+    <button onclick="searchLogs()">Search</button>
+
+    <ul id="logResults"></ul>
+
+    <script>
+      async function searchLogs() {
+        const level = document.getElementById("level").value;
+        const message = document.getElementById("message").value;
+        const resourceId = document.getElementById("resourceId").value;
+        const timestampStart = document.getElementById("timestamp").value;
+        const timestampEnd = document.getElementById("timestampEnd").value;
+        const traceId = document.getElementById("traceId").value;
+        const spanId = document.getElementById("spanId").value;
+        const commit = document.getElementById("commit").value;
+        const parentResourceId =
+          document.getElementById("parentResourceId").value;
+
+        // Check if both timestampStart and timestampEnd are provided
+        if (timestampEnd || timestampStart) {
+          if (timestampStart && timestampEnd) {
+            const searchQuery = {
+              level,
+              message,
+              resourceId,
+              timestampStart,
+              timestampEnd,
+              traceId,
+              spanId,
+              commit,
+              parentResourceId,
+            };
+
+            const searchUrl = "http://localhost:3000/search";
+            try {
+              const response = await fetch(searchUrl, {
+                method: "POST",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+                body: JSON.stringify(searchQuery),
+              });
+
+              const results = await response.json();
+              displayResults(results);
+            } catch (error) {
+              console.error("Error searching logs:", error);
+              // Handle error
+            }
+          } else {
+            alert("Please select both Timestamp Start and Timestamp End");
+          }
+        } else {
+          const searchQuery = {
+            level,
+            message,
+            resourceId,
+            timestampStart,
+            timestampEnd,
+            traceId,
+            spanId,
+            commit,
+            parentResourceId,
+          };
+
+          const searchUrl = "http://localhost:3000/search";
+          try {
+            const response = await fetch(searchUrl, {
+              method: "POST",
+              headers: {
+                "Content-Type": "application/json",
+              },
+              body: JSON.stringify(searchQuery),
+            });
+
+            const results = await response.json();
+            displayResults(results);
+          } catch (error) {
+            console.error("Error searching logs:", error);
+            // Handle error
+          }
+        }
+      }
+
+      function displayResults(results) {
+        const logResults = document.getElementById("logResults");
+        logResults.innerHTML = "";
+
+        results.forEach((log) => {
+          const listItem = document.createElement("li");
+
+          // Define the order in which properties should be displayed
+          const propertyOrder = [
+            "level",
+            "message",
+            "resourceId",
+            "timestamp",
+            "traceId",
+            "spanId",
+            "commit",
+            "metadata",
+            "datetime",
+          ];
+
+          // Display each property in the specified order
+          propertyOrder.forEach((key) => {
+            if (log.hasOwnProperty(key)) {
+              const propertyElement = document.createElement("div");
+              propertyElement.classList.add("log-property");
+
+              const propertyName = document.createElement("span");
+              propertyName.classList.add("property-name");
+              propertyName.textContent = `${key}:`;
+
+              const propertyValue = document.createElement("span");
+              propertyValue.classList.add("property-value");
+              propertyValue.textContent = JSON.stringify(log[key]);
+
+              propertyElement.appendChild(propertyName);
+              propertyElement.appendChild(propertyValue);
+
+              listItem.appendChild(propertyElement);
+            }
+          });
+
+          logResults.appendChild(listItem);
+        });
+      }
+    </script>
+  </body>
+</html>
